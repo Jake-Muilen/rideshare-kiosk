@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drop a Tip</title>
+    <style>
+        :root { --bg-color: #0d0d0d; --card-bg: #1a1a1a; --gold: #FFD12E; --text-main: #ffffff; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: -apple-system, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .header { text-align: center; margin-bottom: 25px; margin-top: 10px; }
+        .header h1 { color: var(--gold); margin: 0; font-size: 26px; }
+        .card { background-color: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); box-sizing: border-box; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; }
+        input { width: 100%; background-color: #242424; border: 1px solid #333; color: white; padding: 14px; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--gold); }
+        .amount-wrapper { position: relative; }
+        .amount-wrapper::before { content: '$'; position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: 18px; font-weight: bold; }
+        .amount-wrapper input { padding-left: 35px; color: var(--gold); font-weight: bold; }
+        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+        .pay-btn { flex: 1; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: bold; border: none; cursor: pointer; color: white; }
+        .btn-cashapp { background-color: #00D632; color: black; }
+        .btn-venmo { background-color: #008CFF; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Leaderboard</h1>
+        <p style="color:#888;">Claim your spot on the screen.</p>
+    </div>
+
+    <div class="card">
+        <div class="input-group">
+            <label>Rider Name</label>
+            <input type="text" id="riderName" placeholder="e.g. Sarah M." autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>Tip Amount</label>
+            <div class="amount-wrapper">
+                <input type="number" id="tipAmount" placeholder="0.00" step="0.01" inputmode="decimal">
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Shoutout (Optional)</label>
+            <input type="text" id="note" placeholder="You rock!" maxlength="40">
+        </div>
+
+        <div class="btn-row">
+            <button class="pay-btn btn-cashapp" onclick="processTip('cashapp')">CashApp</button>
+            <button class="pay-btn btn-venmo" onclick="processTip('venmo')">Venmo</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const CASHAPP_TAG = "YOUR_CASHTAG_HERE"; // e.g., "JakeSmith"
+        const VENMO_HANDLE = "YOUR_VENMO_HERE"; // e.g., "Jake-Smith"
+        
+        // Pointing straight to your S7 Edge's local IP for tonight's home test
+        const TUNNEL_URL = "http://192.168.X.X:8080/promise/";
+
+        function processTip(platform) {
+            const name = document.getElementById('riderName').value.trim() || "Anonymous";
+            const amount = parseFloat(document.getElementById('tipAmount').value) || 0.0;
+            const note = document.getElementById('note').value.trim();
+
+            const payload = { name: name, weight: amount, note: note };
+
+            // 1. Send the promise to your S7 Edge Unity server via local Wi-Fi
+            fetch(TUNNEL_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.log('Background sync error:', err))
+            .finally(() => {
+                // 2. Redirect passenger to their payment app
+                if (platform === 'cashapp') {
+                    window.location.href = `https://cash.app/$${CASHAPP_TAG}/${amount}`;
+                } else if (platform === 'venmo') {
+                    const encodedNote = encodeURIComponent(note || "Rideshare Tip");
+                    window.location.href = `https://venmo.com/?txn=pay&audience=private&recipients=${VENMO_HANDLE}&amount=${amount}&note=${encodedNote}`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
